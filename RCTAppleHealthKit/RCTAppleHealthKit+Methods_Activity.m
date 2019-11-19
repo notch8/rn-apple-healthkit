@@ -138,6 +138,7 @@
 - (void)activity_getAppleExerciseTime:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
 {
     HKQuantityType *exerciseType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierAppleExerciseTime];
+    NSUInteger limit = [RCTAppleHealthKit uintFromOptions:input key:@"limit" withDefault:HKObjectQueryNoLimit];
     NSDate *startDate = [RCTAppleHealthKit dateFromOptions:input key:@"startDate" withDefault:nil];
     NSDate *endDate = [RCTAppleHealthKit dateFromOptions:input key:@"endDate" withDefault:[NSDate date]];
     HKUnit *unit = [HKUnit secondUnit];
@@ -152,7 +153,7 @@
                                        startDate:startDate
                                          endDate:endDate
                                        ascending:false
-                                           limit:HKObjectQueryNoLimit
+                                           limit:limit
                                       completion:^(NSArray *results, NSError *error) {
                                           if(results){
                                               callback(@[[NSNull null], results]);
