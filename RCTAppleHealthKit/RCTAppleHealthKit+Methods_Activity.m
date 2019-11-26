@@ -136,34 +136,66 @@
 
 }
 
+//- (void)activity_getAppleExerciseTime:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
+//{
+//    HKQuantityType *exerciseType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierAppleExerciseTime];
+//    NSUInteger limit = [RCTAppleHealthKit uintFromOptions:input key:@"limit" withDefault:HKObjectQueryNoLimit];
+//    NSDate *startDate = [RCTAppleHealthKit dateFromOptions:input key:@"startDate" withDefault:nil];
+//    NSDate *endDate = [RCTAppleHealthKit dateFromOptions:input key:@"endDate" withDefault:[NSDate date]];
+//    HKUnit *unit = [HKUnit secondUnit];
+//
+//    if(startDate == nil){
+//        callback(@[RCTMakeError(@"startDate is required in options", nil, nil)]);
+//        return;
+//    }
+//
+//    [self fetchCumulativeSumStatisticsCollection:exerciseType
+//                                            unit:unit
+//                                       startDate:startDate
+//                                         endDate:endDate
+//                                       ascending:false
+//                                           limit:limit
+//                                      completion:^(NSArray *results, NSError *error) {
+//                                          if(results){
+//                                              callback(@[[NSNull null], results]);
+//                                              return;
+//                                          } else {
+//                                              NSLog(@"error getting exercise time: %@", error);
+//                                              callback(@[RCTMakeError(@"error  getting exercise time", nil, nil)]);
+//                                              return;
+//                                          }
+//                                      }];
+//}
 - (void)activity_getAppleExerciseTime:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback
 {
-    HKQuantityType *exerciseType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierAppleExerciseTime];
-    NSUInteger limit = [RCTAppleHealthKit uintFromOptions:input key:@"limit" withDefault:HKObjectQueryNoLimit];
+    HKQuantityType *activeEnergyType = [HKQuantityType quantityTypeForIdentifier:HKQuantityTypeIdentifierAppleExerciseTime];
     NSDate *startDate = [RCTAppleHealthKit dateFromOptions:input key:@"startDate" withDefault:nil];
     NSDate *endDate = [RCTAppleHealthKit dateFromOptions:input key:@"endDate" withDefault:[NSDate date]];
-    HKUnit *unit = [HKUnit secondUnit];
-
+    HKUnit *minute = [HKUnit minuteUnit];
+    
     if(startDate == nil){
         callback(@[RCTMakeError(@"startDate is required in options", nil, nil)]);
         return;
     }
-
-    [self fetchCumulativeSumStatisticsCollection:exerciseType
-                                            unit:unit
-                                       startDate:startDate
-                                         endDate:endDate
-                                       ascending:false
-                                           limit:limit
-                                      completion:^(NSArray *results, NSError *error) {
-                                          if(results){
-                                              callback(@[[NSNull null], results]);
-                                              return;
-                                          } else {
-                                              NSLog(@"error getting exercise time: %@", error);
-                                              callback(@[RCTMakeError(@"error  getting exercise time", nil, nil)]);
-                                              return;
-                                          }
-                                      }];
+    NSPredicate * predicate = [RCTAppleHealthKit predicateForSamplesBetweenDates:startDate endDate:endDate];
+    
+    [self fetchSumOfSamplesOnDayForType:activeEnergyType
+                                   unit:minute
+                                    day:endDate
+                             completion:^(double value, NSDate *startDate, NSDate *endDate, NSError *error) {
+                                 if (!value) {
+                                     NSLog(@"could not fetch step count for day: %@", error);
+                                     callback(@[RCTMakeError(@"could not fetch step count for day", error, nil)]);
+                                     return;
+                                 }
+                                 
+                                 NSDictionary *response = @{
+                                                            @"value" : @(value),
+                                                            @"startDate" : [RCTAppleHealthKit buildISO8601StringFromDate:startDate],
+                                                            @"endDate" : [RCTAppleHealthKit buildISO8601StringFromDate:endDate],
+                                                            };
+                                 
+                                 callback(@[[NSNull null], response]);
+                             }];s
 }
 @end
