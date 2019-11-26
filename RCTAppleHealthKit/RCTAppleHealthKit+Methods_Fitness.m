@@ -37,14 +37,22 @@
             callback(@[RCTJSErrorFromNSError(error)]);
             return;
         }
+        
+        [self fetchSumOfManuallyInputStepsForDay:date completion:^(double manualSteps, NSError *error2) {
+            if (error2 != nil) {
+                NSLog(@"could not fetch manual step count for day: %@", error2);
+                callback(@[RCTMakeError(@"could not fetch manual step count for day", error2, nil)]);
+                return;
+            }
+            NSDictionary *response = @{
+                                       @"value" : @(value - manualSteps),
+                                       @"startDate" : [RCTAppleHealthKit buildISO8601StringFromDate:startDate],
+                                       @"endDate" : [RCTAppleHealthKit buildISO8601StringFromDate:endDate],
+                                       };
+            
+            callback(@[[NSNull null], response]);
+        }];
 
-         NSDictionary *response = @{
-                 @"value" : @(value),
-                 @"startDate" : [RCTAppleHealthKit buildISO8601StringFromDate:startDate],
-                 @"endDate" : [RCTAppleHealthKit buildISO8601StringFromDate:endDate],
-         };
-
-        callback(@[[NSNull null], response]);
     }];
 }
 

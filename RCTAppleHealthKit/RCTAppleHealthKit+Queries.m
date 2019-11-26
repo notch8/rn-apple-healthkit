@@ -449,6 +449,38 @@
 }
 
 
+- (void)fetchSumOfManuallyInputStepsForDay:(NSDate *)day completion:(void (^)(double, NSError *))completionHandler {
+    
+    HKSampleType *type = [HKSampleType quantityTypeForIdentifier:HKQuantityTypeIdentifierStepCount];
+    NSPredicate *predicate = [RCTAppleHealthKit predicateForSamplesOnDay:day];
+    
+    
+    HKSampleQuery *query = [[HKSampleQuery alloc] initWithSampleType:type predicate:predicate limit:0 sortDescriptors:nil resultsHandler:^(HKSampleQuery *query, NSArray *results, NSError *error) {
+        
+        double steps = 0;
+        
+        for (HKQuantitySample *result  in results ) {
+            
+            NSDictionary *resultMetadata = result.metadata;
+            NSLog(@"%@", resultMetadata);
+            
+            if ([result.sourceRevision.source.name  isEqual: @"Health"]) {
+                if ([resultMetadata valueForKey:@"HKWasUserEntered"] != nil &&
+                    [[resultMetadata valueForKey:@"HKWasUserEntered"] isEqualToNumber:[NSNumber numberWithInt:1]]) {
+                    steps += [result.quantity doubleValueForUnit:([HKUnit countUnit])];
+                }
+            }
+        }
+        if (completionHandler) {
+            completionHandler(steps, error);
+        }
+        
+    }];
+    [self.healthStore executeQuery:query];
+}
+
+
+
 - (void)fetchCumulativeSumStatisticsCollection:(HKQuantityType *)quantityType
                                           unit:(HKUnit *)unit
                                      startDate:(NSDate *)startDate
